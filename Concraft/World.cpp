@@ -20,13 +20,42 @@ inline bool operator<(mathpls::vec2 v1, mathpls::vec2 v2){
 #include <queue>
 #include <set>
 #include <iomanip>
-
-inline void clear(){
-    system("clear");
-}
+#include <fstream>
 
 World::World(int width, int height, string seed) : seed(seed){
     CreateWorld(width, height, seed);
+}
+
+World::World(string path){
+    ifstream ifs(path);
+    int width, height;
+    ifs >> seed >> width >> height;
+    
+    map.resize(height);
+    for(auto& i : map){
+        i.resize(width);
+        for(auto& block : i){
+            string ID;
+            ifs >> ID;
+            block = Blocks[ID];
+        }
+    }
+    
+    CreateEntities(static_cast<int>(hash<string>{}(seed)));
+    
+    Player* player = reinterpret_cast<Player*>(entities[0].get());
+    ifs >> player->health >> player->satiety >> player->pos.x >> player->pos.y >> player->forward.x >> player->forward.y;
+    int bagSize;
+    ifs >> bagSize;
+    player->bag.resize(bagSize);
+    for(auto& i : player->bag){
+        string ID;
+        int durability, num;
+        ifs >> ID >> durability >> num;
+        i.first = Items[ID];
+        i.first.durability = durability;
+        i.second = num;
+    }
 }
 
 World::~World(){
@@ -125,7 +154,7 @@ void World::PlantOneTree(int x, int y){
     int r = randint(3) + 1;  // 123
     for (int leaveY = max(0, y - r); leaveY <= min((int) map.size() - 1, y + r); leaveY++) {
         for (int leaveX = max(0, x - r); leaveX <= min((int) map[y].size() - 1, x + r); leaveX++) {
-            if (map[leaveY][leaveX] == Blocks["air"]) {
+            if (map[leaveY][leaveX].ID == "air") {
                 map[leaveY][leaveX] = Blocks["leave"];
             }
         }
@@ -180,12 +209,13 @@ void World::Play(){
         mathpls::ivec2 o{mathpls::mid<int>(0, entities[0]->pos.x - 7, (int)map[0].size()-15), mathpls::mid<int>(0, entities[0]->pos.y - 7, (int)map.size()-15)};
         for(int y = o.y; y < o.y + 15; y++){
             for(int x = o.x; x < o.x + 15; x++){
-                if(map[y][x] == Blocks["leave"] && isLeaveLossRoot(mathpls::vec2(x, y))){
+                // 销毁悬浮树叶
+                if(map[y][x].ID == "leave" && isLeaveLossRoot(mathpls::vec2(x, y))){
                     // 有20%的几率销毁
                     if (percentage(20)) {
                         map[y][x] = Blocks["air"];
                         // 销毁之后 可能产生树苗、果子
-                        if (percentage(20)) {
+                        if (percentage(10)) {
                             entities.push_back(make_unique<Item>(Items["apple"]));
                             entities.back()->controller = new ItemController(this);
                             entities.back()->pos = mathpls::vec2(x, y);
@@ -195,6 +225,14 @@ void World::Play(){
                             entities.back()->pos = mathpls::vec2(x, y);
                         }
                     }
+                }
+                // 树苗生长
+                if(map[y][x].ID == "sapling" && percentage(1)){
+                    int an = 0;
+                    for(int i = -1; i < 2; i++)
+                        for(int j = -1; j < 2; j++)
+                            if(map[y+i][x+j].ID == "air") an++;
+                    if(an > 4) PlantOneTree(x, y);
                 }
                 
                 bool drawBlock = true;
@@ -244,8 +282,26 @@ void World::Play(){
             entities.erase(entities.begin() + kill.top());
             kill.pop();
         }
+        
 //        cout<<endl<<entities[0]->pos.x<<" "<<entities[0]->pos.y;
     }
     clear();
     cout<<"你失败了..."<<endl<<"游戏结束"<<endl<<endl;
+}
+
+void World::saveToLocal(){
+    ofstream ofs(seed + ".cnmp");
+    if(!ofs.is_open())
+        throw runtime_error("failed to open files");
+    ofs << seed << " " << map[0].size() << " " << map.size() << endl;
+    for(auto& i : map)
+        for(auto& block : i)
+            ofs << block.ID << endl;
+    
+    Player* player = reinterpret_cast<Player*>(entities[0].get());
+    ofs << player->health << " " << player->satiety << endl << player->pos.x << " " << player->pos.y << " " << player->forward.x << " " << player->forward.y << endl;
+    ofs << player->bag.size() << endl;
+    for(auto& i : player->bag){
+        ofs << i.first.ID << " " << i.first.durability << " "  << i.second << endl;
+    }
 }

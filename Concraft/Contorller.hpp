@@ -38,6 +38,9 @@ private:
      * @param player 玩家指针
      */
     void destroyBlock(Player* player);
+    
+    void bagMenu(Player* player);
+    vector<CraftList> searchCraftLists(const vector<std::pair<Item, int>>& bag);
 };
 
 class ItemController : public Controller {

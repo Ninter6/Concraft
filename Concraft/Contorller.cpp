@@ -8,7 +8,8 @@
 #include "Contorller.hpp"
 
 #include <termios.h>
-#include <stdio.h>
+#include <cstdio>
+#include <iomanip>
 
 PlayerController::PlayerController(World* world) : world(world) {}
 
@@ -24,16 +25,16 @@ void PlayerController::move(GameObject *object){
         flag = false;
         char key = scanKeyboard();
         switch (key) {
-            case 'w':
+            case 'i':
                 key = 65;
                 break;
-            case 's':
+            case 'k':
                 key = 66;
                 break;
-            case 'd':
+            case 'l':
                 key = 67;
                 break;
-            case 'a':
+            case 'j':
                 key = 68;
                 break;
         }
@@ -120,6 +121,14 @@ void PlayerController::move(GameObject *object){
             case 'x':
                 useItems(player);
                 break;
+            case 'c':
+                if(player->bag.size() > 0)
+                    bagMenu(player);
+                break;
+                
+            case 't':
+                world->saveToLocal();
+                break;
                 
             default:
                 flag = true;
@@ -163,20 +172,26 @@ void PlayerController::destroyBlock(Player* player){
         auto& item = player->bag[player->hold - 1];
         // 三个值只要有一个是0就挖不掉
         // 挖掘时长 = 方块坚硬度 / 工具坚硬度 * 方块耐久
-        if(block.hardness / item.first.hardness * block.durability == ++diggingTime){
-            int itemNum = block.item_min + uniform01()*(block.item_max-block.item_min) + .5;
-            for(int i = 0; i < itemNum; i++)
-                world->SummonOneEntity(toward, "item_" + block.itemName);
-            if(--item.first.durability == 0 && --item.second == 0){
-                player->bag.erase(player->bag.begin() + (player->hold - 1));
-                item.first.durability = Items[item.first.ID].durability;
+        if(round((float)block.hardness/item.first.hardness*block.durability)==++diggingTime){
+            if(block.hardness <= item.first.hardness){
+                int itemNum = block.item_min + uniform01()*(block.item_max-block.item_min) + .5;
+                for(int i = 0; i < itemNum; i++)
+                    world->SummonOneEntity(toward, "item_" + block.itemName);
+                if(--item.first.durability == 0){
+                    if(--item.second == 0)
+                        player->bag.erase(player->bag.begin() + (player->hold - 1));
+                    else
+                        item.first.durability = Items[item.first.ID].durability;
+                }
             }
             world->map[toward.y][toward.x] = Blocks["air"];
         }
     } else if(block.hardness * block.durability == ++diggingTime){ // 空手坚硬度为1
-        int itemNum = block.item_min + uniform01()*(block.item_max-block.item_min) + .5;
-        for(int i = 0; i < itemNum; i++)
-            world->SummonOneEntity(toward, "item_" + block.itemName);
+        if(block.hardness == 1){
+            int itemNum = block.item_min + uniform01()*(block.item_max-block.item_min) + .5;
+            for(int i = 0; i < itemNum; i++)
+                world->SummonOneEntity(toward, "item_" + block.itemName);
+        }
         world->map[toward.y][toward.x] = Blocks["air"];
     }
     
@@ -204,6 +219,152 @@ void PlayerController::useItems(Player* player){
     }
 }
 
+void PlayerController::bagMenu(Player *player){
+    auto& bag = player->bag;
+    char key{};
+    ostringstream os;
+    int opt = mathpls::mid(0, player->hold-1, 7), mode = 0, swapBuf = 0;
+    
+    do{
+        clear();
+        auto craftList = searchCraftLists(bag);
+        switch (mode) {
+            case 0:
+                opt = mathpls::mid(mathpls::min(8, (int)bag.size() - 1), opt, 0);
+                break;
+            case 1:
+                opt = mathpls::mid((int)bag.size() - 1, opt, 0);
+                break;
+            case 2:
+                if(craftList.size() > 0)
+                    opt = mathpls::mid((int)craftList.size() - 1, opt, 0);
+                else
+                    mode = 0;
+                break;
+        }
+        
+        for(int i = 1; i<9; i++)
+            cout<<i<<".   ";
+        endl(cout);
+        for(int i = 0; i < mathpls::min<uint64_t>(bag.size(), 8);i++){
+            if(mode == 0 && opt == i)
+                os<<"\033[48;5;247m"<<setw(2 + (int)(bag[i].first.name.size()>4 ? 2 : bag[i].first.name.size()))<<setfill(' ')<<bag[i].first.name<<"\033[0m"<<" ";
+            else
+                os<<setw(2 + (int)(bag[i].first.name.size()>4 ? 2 : bag[i].first.name.size()))<<setfill(' ')<<bag[i].first.name<<" ";
+        }
+        cout<<os.str()<<endl<<endl;
+        os.str("");os.clear();
+        for(int i=0;i<bag.size();i++){
+            if(mode == 1 && opt == i)
+                os<<"\033[48;5;247m"<<'['<<bag[i].first.name<<", "<<bag[i].second<<']'<<"\033[0m"<<" ";
+            else
+                os<<'['<<bag[i].first.name<<", "<<bag[i].second<<']'<<" ";
+        }
+        cout<<os.str()<<endl;
+        os.str("");os.clear();
+        cout<<endl<<"可合成: ";
+        for(int i = 0; i < craftList.size(); i++){
+            if(mode == 2 && opt == i)
+                os << "\033[48;5;247m" <<Items[craftList[i].product].name<< "\033[0m" << " ";
+            else
+                os << Items[craftList[i].product].name << " ";
+        }
+        cout<<os.str()<<endl;
+        os.str("");os.clear();
+        
+        switch (key = scanKeyboard()) {
+            case 'i':
+                key = 65;
+                break;
+            case 'k':
+                key = 66;
+                break;
+            case 'l':
+                key = 67;
+                break;
+            case 'j':
+                key = 68;
+                break;
+        }
+        switch (key) {
+            case 65:
+                if(mode == 2){
+                    opt = swapBuf;
+                    mode = 0;
+                }
+                break;
+            case 66:
+                if(mode == 0){
+                    swapBuf = opt;
+                    mode = 2;
+                }
+                break;
+            case 67:
+                ++opt;
+                break;
+            case 68:
+                --opt;
+                break;
+                
+            case 'z':
+                switch (mode) {
+                    case 0:
+                        mode = 1;
+                        swapBuf = opt;
+                        break;
+                    case 1:
+                        swap(bag[swapBuf], bag[opt]);
+                        opt = swapBuf;
+                        mode = 0;
+                        break;
+                    case 2:
+                        for(const auto& mat : craftList[opt].materials)
+                            for(int i = 0; i < bag.size(); i++)
+                                if(bag[i].first.ID == mat.first && (bag[i].second -= mat.second) == 0){
+                                    bag.erase(bag.begin() + i);
+                                    break;
+                                }
+                        bool found = false;
+                        for(auto& i : player->bag)
+                            if (i.first.ID == craftList[opt].product){
+                                i.second += craftList[opt].num;
+                                found = true;
+                                break;
+                            }
+                        if(!found) bag.emplace_back(Items[craftList[opt].product], craftList[opt].num);
+                        break;
+                }
+                break;
+                
+            default:
+                break;
+        }
+    }while(key != 'c');
+}
+
+vector<CraftList> PlayerController::searchCraftLists(const vector<std::pair<Item, int>>& bag)
+{
+    vector<CraftList> r;
+    for(const auto& list : CraftLists){
+        bool ok = true;
+        for(const auto& mat : list.materials){
+            bool found = false;
+            for(const auto& i : bag)
+                if (i.first.ID == mat.first) {
+                    if(i.second < mat.second)
+                        ok = false;
+                    found = true;
+                    break;
+                }
+            if (!found) {
+                ok = false;
+            }
+        }
+        if (ok) r.push_back(list);
+    }
+    return r;
+}
+
 ItemController::ItemController(World* world) : world(world) {}
 
 void ItemController::move(GameObject *object){
@@ -217,7 +378,7 @@ void ItemController::move(GameObject *object){
                 found = true;
                 break;
             }
-        if(!found) player->bag.push_back({*item, 1});
+        if(!found) player->bag.emplace_back(*item, 1);
         
         for(uint32_t i = 0; i < world->entities.size(); i++)
             if(world->entities[i].get() == item){

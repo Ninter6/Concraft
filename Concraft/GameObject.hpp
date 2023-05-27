@@ -23,7 +23,7 @@ public:
     inline void out() const {
         int fc = 16 + 36*frontColor.r + 6*frontColor.g + frontColor.b;
         int bc = 16 + 36*backColor.r + 6*backColor.g + backColor.b;
-        std::stringstream formatter;
+        std::ostringstream formatter;
         formatter << "\033[38;5;"<<fc<<"m" << "\033[48;5;"<<bc<<"m" << zi << "\033[0m";
         std::cout << formatter.str();
     }
@@ -99,18 +99,25 @@ static std::unordered_map<std::string, Item> Items{
     {"wood", {{5, 2, 0}, {0, 0, 0}, "木", 1, 1, -1, "木头", "wood"}},
     {"apple", {{5, 0, 0}, {0, 0, 0}, "果", 1, 1, -1, "苹果", "apple"}},
     {"sapling", {{2, 5, 2}, {0, 0, 0}, "苗", 1, 1, -1, "树苗", "sapling"}},
+    {"plank", {{3, 1, 0}, {5, 2, 0}, "板", 1, 1, -1, "木板", "plank"}},
+    {"stick", {{5, 2, 0}, {0, 0, 0}, "棍", 1, 1, -1, "木棍", "stick"}},
+    {"wooden_pickaxe", {{5, 2, 0}, {0, 0, 0}, "镐", 3, 2, 60, "木镐", "wooden_pickaxe"}},
+    {"stone_pickaxe", {{0, 0, 232}, {0, 0, 0}, "镐", 4, 3, 132, "石镐", "stone_pickaxe"}},
+    {"iron_pickaxe", {{0, 0, 232}, {0, 0, 0}, "镐", 5, 4, 251, "铁镐", "iron_pickaxe"}},
+    {"diamond_pickaxe", {{0, 4, 5}, {0, 0, 0}, "镐", 6, 5, 1562, "钻镐", "diamond_pickaxe"}},
 };
 
 static std::unordered_map<std::string, Block> Blocks{
     {"air", {{0, 0, 0}, {0, 0, 0}, "  ", 0, 0, 0, 0, {}, 0, "air"}},
-    {"stone", {{0, 0, 0}, {0, 0, 232}, "  ", 1, 3, 1, 1, "stone", 1}},
+    {"stone", {{0, 0, 0}, {0, 0, 232}, "  ", 2, 3, 1, 1, "stone", 1, "stone"}},
     {"diamond_ore", {{0, 4, 5}, {0, 0, 232}, "钻", 4, 5, 1, 1, "diamond", 1, "diamond_ore"}},
     {"gold_ore", {{5, 4, 0}, {0, 0, 232}, "金", 3, 3, 1, 1, "gold_ingot", 1, "gold_ore"}},
-    {"coal_ore", {{0, 0, 0}, {0, 0, 232}, "煤", 1, 3, 1, 3, "coal", 1, "coal_ore"}},
-    {"iron_ore", {{4, 3.2, 2}, {0, 0, 232}, "铁", 2, 3, 1, 1, "iron_ingot", 1, "iron_ore"}},
+    {"coal_ore", {{0, 0, 0}, {0, 0, 232}, "煤", 2, 3, 1, 3, "coal", 1, "coal_ore"}},
+    {"iron_ore", {{4, 3.2, 2}, {0, 0, 232}, "铁", 3, 3, 1, 1, "iron_ingot", 1, "iron_ore"}},
     {"leave", {{1, 5, 1}, {0, 0, 0}, "叶", 0, 1, 0, 0, "leave", 0, "leave"}},
-    {"wood", {{5, 2, 0}, {0, 0, 0}, "木", 1, 3, 1, 5, "wood", 1, "wood"}},
-    {"sapling", {{2, 5, 2}, {5, 2, 0}, "苗", 1, 1, 1, 1, "sapling", 0, "sapling"}}
+    {"wood", {{5, 3, 0}, {3, 1, 0}, "木", 1, 3, 1, 5, "wood", 1, "wood"}},
+    {"sapling", {{2, 5, 2}, {5, 2, 0}, "苗", 1, 1, 1, 1, "sapling", 0, "sapling"}},
+    {"plank", {{5, 2, 0}, {3, 1, 0}, "板", 1, 3, 1, 1, "plank", 1, "plank"}},
 };
 
 static std::unordered_map<std::string, ItemAttribute> ItemAttributes{
@@ -123,4 +130,25 @@ static std::unordered_map<std::string, ItemAttribute> ItemAttributes{
     {"wood", {true, "wood", false}},
     {"apple", {false, {}, true, 2}},
     {"sapling", {true, "sapling", false}},
+    {"plank", {true, "plank", false}},
+    {"stick", {false, {}, false}},
+    {"wooden_pickaxe", {false, {}, false}},
+    {"stone_pickaxe", {false, {}, false}},
+    {"iron_pickaxe", {false, {}, false}},
+    {"diamond_pickaxe", {false, {}, false}},
+};
+
+struct CraftList {
+    std::string product;
+    int num;
+    std::vector<std::pair<std::string, int>> materials;
+};
+
+static std::vector<CraftList> CraftLists{
+    {"plank", 4, {{"wood", 1}}},
+    {"stick", 4, {{"plank", 2}}},
+    {"wooden_pickaxe", 1, {{"wood", 3}, {"plank", 2}}},
+    {"stone_pickaxe", 1, {{"stone", 3}, {"plank", 2}}},
+    {"iron_pickaxe", 1, {{"iron_ingot", 3}, {"plank", 2}}},
+    {"diamond_pickaxe", 1, {{"diamond", 3}, {"plank", 2}}},
 };

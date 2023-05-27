@@ -17,9 +17,14 @@
 
 using namespace std;
 
+inline void clear(){
+    system("clear");
+}
+
 class World {
 public:
     World(int width, int height, string seed);
+    World(string path);
     ~World();
     
     vector<vector<Block>> map;
@@ -35,9 +40,11 @@ public:
     /**
      * 召唤一个已经预设的实体(或物品)
      * @param pos 位置
-     * @param name 实体名称(⚠️实体要在开头加"item_"⚠️)
+     * @param name 实体名称(⚠️物品要在开头加"item_"⚠️)
      */
     void SummonOneEntity(mathpls::vec2 pos, string name);
+    
+    void saveToLocal();
     
 private:
     void CreateWorld(int width, int height, string seed);

@@ -9,7 +9,7 @@
 
 #include <random>
 
-static std::default_random_engine _E(static_cast<uint32_t>(/*time(nullptr)*/114));
+static std::default_random_engine _E(static_cast<uint32_t>(time(nullptr)));
 
 /**
  * 生成 [0, n] 范围的随机整数
