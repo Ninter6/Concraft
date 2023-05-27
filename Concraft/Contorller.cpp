@@ -14,6 +14,12 @@ PlayerController::PlayerController(World* world) : world(world) {}
 
 void PlayerController::move(GameObject *object){
     Player* player = reinterpret_cast<Player*>(object);
+    
+    if(keepDigging)
+        keepDigging = false;
+    else
+        diggingTime = 0;
+    
     for(bool flag = true; flag;){
         flag = false;
         char key = scanKeyboard();
@@ -72,13 +78,56 @@ void PlayerController::move(GameObject *object){
                     player->zi = "<<";
                 }
                 break;
+            case '0':
+                player->hold=0;
+                break;
+            case '1':
+                if(player->bag.size() >= 1)
+                    player->hold=1;
+                break;
+            case '2':
+                if(player->bag.size() >= 2)
+                    player->hold=2;
+                break;
+            case '3':
+                if(player->bag.size() >= 3)
+                    player->hold=3;
+                break;
+            case '4':
+                if(player->bag.size() >= 4)
+                    player->hold=4;
+                break;
+            case '5':
+                if(player->bag.size() >= 5)
+                    player->hold=5;
+                break;
+            case '6':
+                if(player->bag.size() >= 6)
+                    player->hold=6;
+                break;
+            case '7':
+                if(player->bag.size() >= 7)
+                    player->hold=7;
+                break;
+            case '8':
+                if(player->bag.size() >= 8)
+                    player->hold=8;
+                break;
+                
+            case 'z':
+                destroyBlock(player);
+                break;
+            case 'x':
+                useItems(player);
+                break;
                 
             default:
                 flag = true;
                 break;
         }
     }
-    if((((int) world->_E() % 2147483647) % 100) < 1){
+    
+    if(percentage(2)){
         if(player->satiety>0)
             player->satiety--;
         else
@@ -103,6 +152,58 @@ char PlayerController::scanKeyboard(){
     return in;
 }
 
+void PlayerController::destroyBlock(Player* player){
+    if(player->hold > player->bag.size())
+        return;
+    
+    auto toward = player->pos + player->forward;
+    if(toward.x < 0 || toward.x >= world->map[0].size() || toward.y < 0 || toward.y >= world->map.size()) return;
+    const auto& block = world->map[toward.y][toward.x];
+    if(player->hold){
+        auto& item = player->bag[player->hold - 1];
+        // 三个值只要有一个是0就挖不掉
+        // 挖掘时长 = 方块坚硬度 / 工具坚硬度 * 方块耐久
+        if(block.hardness / item.first.hardness * block.durability == ++diggingTime){
+            int itemNum = block.item_min + uniform01()*(block.item_max-block.item_min) + .5;
+            for(int i = 0; i < itemNum; i++)
+                world->SummonOneEntity(toward, "item_" + block.itemName);
+            if(--item.first.durability == 0 && --item.second == 0){
+                player->bag.erase(player->bag.begin() + (player->hold - 1));
+                item.first.durability = Items[item.first.ID].durability;
+            }
+            world->map[toward.y][toward.x] = Blocks["air"];
+        }
+    } else if(block.hardness * block.durability == ++diggingTime){ // 空手坚硬度为1
+        int itemNum = block.item_min + uniform01()*(block.item_max-block.item_min) + .5;
+        for(int i = 0; i < itemNum; i++)
+            world->SummonOneEntity(toward, "item_" + block.itemName);
+        world->map[toward.y][toward.x] = Blocks["air"];
+    }
+    
+    keepDigging = true;
+}
+
+void PlayerController::useItems(Player* player){
+    if(!player->hold || player->hold > player->bag.size())
+        return;
+    auto& item = player->bag[player->hold - 1];
+    const auto& attribute = ItemAttributes[item.first.ID];
+    
+    if (attribute.placeable) {
+        mathpls::vec2 toward = player->pos + player->forward;
+        if (world->map[toward.y][toward.x] == Blocks["air"]) {
+            world->map[toward.y][toward.x] = Blocks[attribute.placeBlockName];
+            if (--item.second == 0)
+                player->bag.erase(player->bag.begin() + (player->hold - 1));
+        }
+    } else if (attribute.edible && player->satiety != 10) {
+        player->satiety += attribute.satietyAdd;
+        player->satiety = mathpls::min(player->satiety, 10);
+        if (--item.second == 0)
+            player->bag.erase(player->bag.begin() + (player->hold - 1));
+    }
+}
+
 ItemController::ItemController(World* world) : world(world) {}
 
 void ItemController::move(GameObject *object){
@@ -114,12 +215,13 @@ void ItemController::move(GameObject *object){
             if (i.first == *item){
                 i.second++;
                 found = true;
+                break;
             }
         if(!found) player->bag.push_back({*item, 1});
         
-        for(auto i = world->entities.begin(); i!=world->entities.end(); i++)
-            if((*i).get() == item){
-                world->kill.push_back(i);
+        for(uint32_t i = 0; i < world->entities.size(); i++)
+            if(world->entities[i].get() == item){
+                world->kill.push(i);
                 break;
             }
     }

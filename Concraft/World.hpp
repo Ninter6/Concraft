@@ -9,9 +9,11 @@
 
 #include <iostream>
 #include <vector>
+#include <queue>
 
 #include "GameObject.hpp"
 #include "Noise2D.hpp"
+#include "StaticRandom.hpp"
 
 using namespace std;
 
@@ -22,7 +24,7 @@ public:
     
     vector<vector<Block>> map;
     vector<unique_ptr<Entity>> entities;
-    vector<vector<unique_ptr<Entity>>::iterator> kill;
+    priority_queue<uint32_t> kill;
     
     string seed;
     
@@ -30,7 +32,12 @@ public:
     
     unsigned short time = 0;
     
-    default_random_engine _E;
+    /**
+     * 召唤一个已经预设的实体(或物品)
+     * @param pos 位置
+     * @param name 实体名称(⚠️实体要在开头加"item_"⚠️)
+     */
+    void SummonOneEntity(mathpls::vec2 pos, string name);
     
 private:
     void CreateWorld(int width, int height, string seed);

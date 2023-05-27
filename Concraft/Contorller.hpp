@@ -24,6 +24,20 @@ private:
      * @return 输入字符
      */
     char scanKeyboard();
+    
+    /**
+     * 使用物品
+     * @param player 玩家指针
+     */
+    void useItems(Player* player);
+    
+    bool keepDigging = false;
+    int diggingTime = 0;
+    /**
+     * 破坏方块
+     * @param player 玩家指针
+     */
+    void destroyBlock(Player* player);
 };
 
 class ItemController : public Controller {
