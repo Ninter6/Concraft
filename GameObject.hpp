@@ -147,8 +147,8 @@ struct CraftList {
 static std::vector<CraftList> CraftLists{
     {"plank", 4, {{"wood", 1}}},
     {"stick", 4, {{"plank", 2}}},
-    {"wooden_pickaxe", 1, {{"wood", 3}, {"plank", 2}}},
-    {"stone_pickaxe", 1, {{"stone", 3}, {"plank", 2}}},
-    {"iron_pickaxe", 1, {{"iron_ingot", 3}, {"plank", 2}}},
-    {"diamond_pickaxe", 1, {{"diamond", 3}, {"plank", 2}}},
+    {"wooden_pickaxe", 1, {{"plank", 3}, {"stick", 2}}},
+    {"stone_pickaxe", 1, {{"stone", 3}, {"stick", 2}}},
+    {"iron_pickaxe", 1, {{"iron_ingot", 3}, {"stick", 2}}},
+    {"diamond_pickaxe", 1, {{"diamond", 3}, {"stick", 2}}},
 };
