@@ -600,6 +600,85 @@ mat4 rotate(qua<T> q){
     return mat4(mv);
 }
 
+namespace random {
+struct RandomSequence{
+private:
+    unsigned int m_index;
+    unsigned int m_intermediateOffset;
+
+    static unsigned int permuteQPR(unsigned int x)
+    {
+        static const unsigned int prime = 4294967291u;
+        if (x >= prime)
+            return x;  // The 5 integers out of range are mapped to themselves.
+        unsigned int residue = ((unsigned long long) x * x) % prime;
+        return (x <= prime / 2) ? residue : prime - residue;
+    }
+
+public:
+    RandomSequence(unsigned int seedBase, unsigned int seedOffset)
+    {
+        m_index = permuteQPR(permuteQPR(seedBase) + 0x682f0161);
+        m_intermediateOffset = permuteQPR(permuteQPR(seedOffset) + 0x46790905);
+    }
+    RandomSequence(unsigned int seed) : RandomSequence(seed, seed + 1) {}
+
+    unsigned int next()
+    {
+        return permuteQPR((permuteQPR(m_index++) + m_intermediateOffset) ^ 0x5bf03635);
+    }
+    
+    unsigned int operator()(){
+        return next();
+    }
+};
+
+struct mt19937{
+    mt19937(unsigned int seed){
+        mt[0] = seed;
+        for(int i=1;i<624;i++)
+            mt[i] = static_cast<unsigned int>(1812433253 * (mt[i - 1] ^ mt[i - 1] >> 30) + i);
+    }
+    
+    unsigned int operator()(){
+        return extract_number();
+    }
+    
+private:
+    unsigned int mt[624];
+    unsigned int mti{0};
+    
+    unsigned int extract_number(){
+        if(mti == 0) twist();
+        unsigned long long y = mt[mti];
+        y = y ^ y >> 11;
+        y = y ^ (y << 7 & 0x9D2C5680);
+        y = y ^ (y << 15 & 0xEFC60000);
+        y = y ^ y >> 18;
+        mti = (mti + 1) % 624;
+        return static_cast<unsigned int>(y);
+    }
+    
+    void twist(){
+        for(int i=0;i<624;i++){
+            // 高位和低位级联
+            auto y = static_cast<unsigned int>((mt[i] & 0x80000000) + (mt[(i + 1) % 624] & 0x7fffffff));
+            mt[i] = (y >> 1) ^ mt[(i + 397) % 624];
+            if(y % 2 != 0) mt[i] = mt[i] ^ 0x9908b0df; // 如果最低为不为零
+        }
+    }
+};
+
+template<class T = long double>
+struct uniform_real_distribution{
+    T a, b;
+    template<class RT>
+    T operator()(RT& e) const {
+        return a + (b - a) / 0xFFFFFFFF * e();
+    }
+};
+}
+
 #else
 
 template<class T>
@@ -1517,6 +1596,85 @@ mat4 rotate(qua<T> q){
         0, 0, 0, 1
     };
     return mat4(mv);
+}
+
+namespace random {
+struct RandomSequence{
+private:
+    unsigned int m_index;
+    unsigned int m_intermediateOffset;
+
+    static unsigned int permuteQPR(unsigned int x)
+    {
+        static const unsigned int prime = 4294967291u;
+        if (x >= prime)
+            return x;  // The 5 integers out of range are mapped to themselves.
+        unsigned int residue = ((unsigned long long) x * x) % prime;
+        return (x <= prime / 2) ? residue : prime - residue;
+    }
+
+public:
+    RandomSequence(unsigned int seedBase, unsigned int seedOffset)
+    {
+        m_index = permuteQPR(permuteQPR(seedBase) + 0x682f0161);
+        m_intermediateOffset = permuteQPR(permuteQPR(seedOffset) + 0x46790905);
+    }
+    RandomSequence(unsigned int seed) : RandomSequence(seed, seed + 1) {}
+
+    unsigned int next()
+    {
+        return permuteQPR((permuteQPR(m_index++) + m_intermediateOffset) ^ 0x5bf03635);
+    }
+    
+    unsigned int operator()(){
+        return next();
+    }
+};
+
+struct mt19937{
+    mt19937(unsigned int seed){
+        mt[0] = seed;
+        for(int i=1;i<624;i++)
+            mt[i] = static_cast<unsigned int>(1812433253 * (mt[i - 1] ^ mt[i - 1] >> 30) + i);
+    }
+    
+    unsigned int operator()(){
+        return extract_number();
+    }
+    
+private:
+    unsigned int mt[624];
+    unsigned int mti{0};
+    
+    unsigned int extract_number(){
+        if(mti == 0) twist();
+        unsigned long long y = mt[mti];
+        y = y ^ y >> 11;
+        y = y ^ (y << 7 & 0x9D2C5680);
+        y = y ^ (y << 15 & 0xEFC60000);
+        y = y ^ y >> 18;
+        mti = (mti + 1) % 624;
+        return static_cast<unsigned int>(y);
+    }
+    
+    void twist(){
+        for(int i=0;i<624;i++){
+            // 高位和低位级联
+            auto y = static_cast<unsigned int>((mt[i] & 0x80000000) + (mt[(i + 1) % 624] & 0x7fffffff));
+            mt[i] = (y >> 1) ^ mt[(i + 397) % 624];
+            if(y % 2 != 0) mt[i] = mt[i] ^ 0x9908b0df; // 如果最低为不为零
+        }
+    }
+};
+
+template<class T = long double>
+struct uniform_real_distribution{
+    T a, b;
+    template<class RT>
+    T operator()(RT& e) const {
+        return a + (b - a) / 0xFFFFFFFF * e();
+    }
+};
 }
 
 #endif

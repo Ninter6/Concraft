@@ -17,7 +17,7 @@ static std::default_random_engine _E(static_cast<uint32_t>(time(nullptr)));
  * @return 结果
  */
 inline int randint(int n) {
-    return ((int) _E() % 2147483647) % n;
+    return int(_E() % 2147483647) % n;
 }
 
 /**
@@ -26,7 +26,7 @@ inline int randint(int n) {
  * @return 真假
  */
 inline bool percentage(int n) {
-    int r = ((int) _E() % 2147483647) % 100;
+    int r = int(_E() % 2147483647) % 100;
     if (r < n)
         return true;
     else
