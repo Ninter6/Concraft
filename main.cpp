@@ -13,7 +13,7 @@
 
 int main(int argc, const char * argv[]) {
     ios::sync_with_stdio(false);
-    cout<<"请选择..."<<endl<<"1.新建世界"<<"2.加载存档";
+    cout<<"请选择..."<<endl<<"1.新建世界"<<endl<<"2.加载存档"<<endl;
     int opt;
     cin >> opt;
     switch (opt) {
