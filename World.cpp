@@ -7,11 +7,13 @@
 
 #include "mathpls.h"
 
-inline bool operator<(mathpls::vec2 v1, mathpls::vec2 v2){
+namespace mathpls {
+inline bool operator<(const vec2& v1, const vec2& v2){
     if (v1.x < v2.x)return true;
     if (v1.x > v2.x)return false;
     if (v1.y < v2.y)return true;
     return false;
+}
 }
 
 #include "World.hpp"
@@ -272,6 +274,7 @@ void World::Play(){
                 cout<<"   ";
             }
         }
+        endl(cout);
         
         // ⚠️这个循环必须用这种形式, 直接用迭代器会出问题⚠️
         for(int i = 0; i < entities.size(); i++)

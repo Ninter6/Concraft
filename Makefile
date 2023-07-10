@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++14
+CXXFLAGS = -std=c++14 -O2
 
 SRC_DIR = $(CURDIR)/
 BUILD_DIR = build_temp/

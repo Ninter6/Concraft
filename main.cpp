@@ -18,17 +18,19 @@ int main(int argc, const char * argv[]) {
     cin >> opt;
     switch (opt) {
         case 1:{
-            cout<<"请输入种子: ";
+            getchar(); // 丢掉一次换行
+            cout<<"请输入种子(留空随机): ";
             string seed;
-            cin>>seed;
-            cout<<"请输入世界大小(100~500):"<<endl;
+            getline(cin, seed);
+            if(seed.size() == 0) seed = to_string(time(nullptr));
+            cout<<"请输入世界大小(100~1000):"<<endl;
             int x, y;
             cout<<"长: ";
             cin>>x;
             cout<<"宽: ";
             cin>>y;
-            x = mathpls::mid(100, x, 500);
-            y = mathpls::mid(100, y, 500);
+            x = mathpls::mid(100, x, 1000);
+            y = mathpls::mid(100, y, 1000);
             World world(x, y, seed);
             world.Play();
             break;
